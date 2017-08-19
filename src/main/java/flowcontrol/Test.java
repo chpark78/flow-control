@@ -7,15 +7,24 @@ import java.util.concurrent.TimeUnit;
 public class Test {
 
     public static void main(String[] args) throws Exception {
-        Buffer<Boolean> buffer = new Buffer<>(20000, TimeUnit.SECONDS, 10);
-        Producer<Boolean> producer = new Producer<>(buffer, Boolean.TRUE);
-        Consumer<Boolean> consumer = new Consumer<>(buffer);
+//        Buffer<Boolean> buffer = new ThreadBasedControlBuffer<>(20000, TimeUnit.SECONDS, 10);
+        Buffer<Boolean> buffer = new ThreadLessControlBuffer<>(20000, TimeUnit.SECONDS, 10);
 
-        ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(10);
-        threadPool.submit(producer);
-        threadPool.submit(producer);
+        int producerCount = 40;
+
+        ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(producerCount + 2);
+
+        Producer<Boolean> producer = new Producer<>(buffer, Boolean.TRUE, 1);
+        for (int i = 0; i < producerCount; i++) {
+            threadPool.submit(producer);
+        }
+
+        Consumer<Boolean> consumer = new Consumer<>(buffer);
         threadPool.submit(consumer);
-        threadPool.scheduleAtFixedRate(new Counter(consumer, 5), 5, 5, TimeUnit.SECONDS);
+
+        int countIntervalSeconds = 5;
+        Counter counter = new Counter(consumer, countIntervalSeconds);
+        threadPool.scheduleAtFixedRate(counter, countIntervalSeconds, countIntervalSeconds, TimeUnit.SECONDS);
 
         threadPool.awaitTermination(1, TimeUnit.DAYS);
     }

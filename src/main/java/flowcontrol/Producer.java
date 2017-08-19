@@ -6,9 +6,12 @@ public class Producer<T> implements Runnable {
 
     private T element;
 
-    public Producer(Buffer<T> buffer, T element) {
+    private long delayMillis;
+
+    public Producer(Buffer<T> buffer, T element, long delayMillis) {
         this.buffer = buffer;
         this.element = element;
+        this.delayMillis = delayMillis;
     }
 
     @Override
@@ -16,6 +19,9 @@ public class Producer<T> implements Runnable {
         try {
             while (true) {
                 buffer.put(element);
+                if (delayMillis > 0) {
+                    Thread.sleep(delayMillis);
+                }
             }
         } catch (InterruptedException ignored) {
         }
